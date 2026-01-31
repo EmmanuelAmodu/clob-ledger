@@ -129,19 +129,19 @@ type NewOrder struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	RequestId    string `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	TokenId      uint64 `protobuf:"varint,2,opt,name=token_id,json=tokenId,proto3" json:"token_id,omitempty"`
-	SubaccountId uint64 `protobuf:"varint,3,opt,name=subaccount_id,json=subaccountId,proto3" json:"subaccount_id,omitempty"`
-	Side         string `protobuf:"bytes,4,opt,name=side,proto3" json:"side,omitempty"`                            // BUY/SELL
-	OrderType    string `protobuf:"bytes,5,opt,name=order_type,json=orderType,proto3" json:"order_type,omitempty"` // LIMIT/MARKET/IOC/FOK/POST_ONLY
-	Tif          string `protobuf:"bytes,6,opt,name=tif,proto3" json:"tif,omitempty"`                              // GTC/IOC/FOK
-	PriceTicks   uint64 `protobuf:"varint,7,opt,name=price_ticks,json=priceTicks,proto3" json:"price_ticks,omitempty"`
-	Qty          uint64 `protobuf:"varint,8,opt,name=qty,proto3" json:"qty,omitempty"`
-	ReduceOnly   bool   `protobuf:"varint,9,opt,name=reduce_only,json=reduceOnly,proto3" json:"reduce_only,omitempty"`
-	ExpiryTs     uint64 `protobuf:"varint,10,opt,name=expiry_ts,json=expiryTs,proto3" json:"expiry_ts,omitempty"`
-	Nonce        uint64 `protobuf:"varint,11,opt,name=nonce,proto3" json:"nonce,omitempty"`
-	Signature    []byte `protobuf:"bytes,12,opt,name=signature,proto3" json:"signature,omitempty"`
-	ClientTs     uint64 `protobuf:"varint,13,opt,name=client_ts,json=clientTs,proto3" json:"client_ts,omitempty"`
+	RequestId  string `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	TokenId    uint64 `protobuf:"varint,2,opt,name=token_id,json=tokenId,proto3" json:"token_id,omitempty"`
+	AccountId  uint64 `protobuf:"varint,3,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	Side       string `protobuf:"bytes,4,opt,name=side,proto3" json:"side,omitempty"`                            // BUY/SELL
+	OrderType  string `protobuf:"bytes,5,opt,name=order_type,json=orderType,proto3" json:"order_type,omitempty"` // LIMIT/MARKET/IOC/FOK/POST_ONLY
+	Tif        string `protobuf:"bytes,6,opt,name=tif,proto3" json:"tif,omitempty"`                              // GTC/IOC/FOK
+	PriceTicks uint64 `protobuf:"varint,7,opt,name=price_ticks,json=priceTicks,proto3" json:"price_ticks,omitempty"`
+	Qty        uint64 `protobuf:"varint,8,opt,name=qty,proto3" json:"qty,omitempty"`
+	ReduceOnly bool   `protobuf:"varint,9,opt,name=reduce_only,json=reduceOnly,proto3" json:"reduce_only,omitempty"`
+	ExpiryTs   uint64 `protobuf:"varint,10,opt,name=expiry_ts,json=expiryTs,proto3" json:"expiry_ts,omitempty"`
+	Nonce      uint64 `protobuf:"varint,11,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	Signature  []byte `protobuf:"bytes,12,opt,name=signature,proto3" json:"signature,omitempty"`
+	ClientTs   uint64 `protobuf:"varint,13,opt,name=client_ts,json=clientTs,proto3" json:"client_ts,omitempty"`
 }
 
 func (x *NewOrder) Reset() {
@@ -190,9 +190,9 @@ func (x *NewOrder) GetTokenId() uint64 {
 	return 0
 }
 
-func (x *NewOrder) GetSubaccountId() uint64 {
+func (x *NewOrder) GetAccountId() uint64 {
 	if x != nil {
-		return x.SubaccountId
+		return x.AccountId
 	}
 	return 0
 }
@@ -272,13 +272,13 @@ type CancelOrder struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	RequestId    string `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	TokenId      uint64 `protobuf:"varint,2,opt,name=token_id,json=tokenId,proto3" json:"token_id,omitempty"`
-	SubaccountId uint64 `protobuf:"varint,3,opt,name=subaccount_id,json=subaccountId,proto3" json:"subaccount_id,omitempty"`
-	OrderId      uint64 `protobuf:"varint,4,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
-	NonceStart   uint64 `protobuf:"varint,5,opt,name=nonce_start,json=nonceStart,proto3" json:"nonce_start,omitempty"`
-	NonceEnd     uint64 `protobuf:"varint,6,opt,name=nonce_end,json=nonceEnd,proto3" json:"nonce_end,omitempty"`
-	Qty          uint64 `protobuf:"varint,7,opt,name=qty,proto3" json:"qty,omitempty"` // 0 = full cancel
+	RequestId  string `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	TokenId    uint64 `protobuf:"varint,2,opt,name=token_id,json=tokenId,proto3" json:"token_id,omitempty"`
+	AccountId  uint64 `protobuf:"varint,3,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	OrderId    uint64 `protobuf:"varint,4,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
+	NonceStart uint64 `protobuf:"varint,5,opt,name=nonce_start,json=nonceStart,proto3" json:"nonce_start,omitempty"`
+	NonceEnd   uint64 `protobuf:"varint,6,opt,name=nonce_end,json=nonceEnd,proto3" json:"nonce_end,omitempty"`
+	Qty        uint64 `protobuf:"varint,7,opt,name=qty,proto3" json:"qty,omitempty"` // 0 = full cancel
 }
 
 func (x *CancelOrder) Reset() {
@@ -327,9 +327,9 @@ func (x *CancelOrder) GetTokenId() uint64 {
 	return 0
 }
 
-func (x *CancelOrder) GetSubaccountId() uint64 {
+func (x *CancelOrder) GetAccountId() uint64 {
 	if x != nil {
-		return x.SubaccountId
+		return x.AccountId
 	}
 	return 0
 }
@@ -367,14 +367,14 @@ type AmendOrder struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	RequestId    string  `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	TokenId      uint64  `protobuf:"varint,2,opt,name=token_id,json=tokenId,proto3" json:"token_id,omitempty"`
-	SubaccountId uint64  `protobuf:"varint,3,opt,name=subaccount_id,json=subaccountId,proto3" json:"subaccount_id,omitempty"`
-	OrderId      uint64  `protobuf:"varint,4,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
-	PriceTicks   *uint64 `protobuf:"varint,5,opt,name=price_ticks,json=priceTicks,proto3,oneof" json:"price_ticks,omitempty"`
-	Qty          *uint64 `protobuf:"varint,6,opt,name=qty,proto3,oneof" json:"qty,omitempty"`
-	Nonce        uint64  `protobuf:"varint,7,opt,name=nonce,proto3" json:"nonce,omitempty"`
-	ClientTs     uint64  `protobuf:"varint,8,opt,name=client_ts,json=clientTs,proto3" json:"client_ts,omitempty"`
+	RequestId  string  `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	TokenId    uint64  `protobuf:"varint,2,opt,name=token_id,json=tokenId,proto3" json:"token_id,omitempty"`
+	AccountId  uint64  `protobuf:"varint,3,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	OrderId    uint64  `protobuf:"varint,4,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
+	PriceTicks *uint64 `protobuf:"varint,5,opt,name=price_ticks,json=priceTicks,proto3,oneof" json:"price_ticks,omitempty"`
+	Qty        *uint64 `protobuf:"varint,6,opt,name=qty,proto3,oneof" json:"qty,omitempty"`
+	Nonce      uint64  `protobuf:"varint,7,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	ClientTs   uint64  `protobuf:"varint,8,opt,name=client_ts,json=clientTs,proto3" json:"client_ts,omitempty"`
 }
 
 func (x *AmendOrder) Reset() {
@@ -423,9 +423,9 @@ func (x *AmendOrder) GetTokenId() uint64 {
 	return 0
 }
 
-func (x *AmendOrder) GetSubaccountId() uint64 {
+func (x *AmendOrder) GetAccountId() uint64 {
 	if x != nil {
-		return x.SubaccountId
+		return x.AccountId
 	}
 	return 0
 }

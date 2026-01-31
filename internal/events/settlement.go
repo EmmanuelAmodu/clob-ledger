@@ -89,11 +89,11 @@ func handleOrderAck(pool *pgxpool.Pool, ack *enginepb.OrderAck) error {
 		return errUnknownOrderMapping
 	}
 	if err := db.InsertOrderMapping(ctx, tx, db.OrderMapping{
-		OrderID:      ack.GetAssignedOrderId(),
-		RequestID:    req.RequestID,
-		SubaccountID: req.SubaccountID,
-		TokenID:      req.TokenID,
-		Side:         req.Side,
+		OrderID:   ack.GetAssignedOrderId(),
+		RequestID: req.RequestID,
+		AccountID: req.AccountID,
+		TokenID:   req.TokenID,
+		Side:      req.Side,
 	}); err != nil {
 		return err
 	}
@@ -176,15 +176,15 @@ func applyFillDeltas(ctx context.Context, tx pgx.Tx, mapping db.OrderMapping, ma
 
 	switch side {
 	case "BUY", "BID":
-		if err := db.ApplyDelta(ctx, tx, mapping.SubaccountID, market.BaseAsset, baseDelta, requestID); err != nil {
+		if err := db.ApplyDelta(ctx, tx, mapping.AccountID, market.BaseAsset, baseDelta, requestID); err != nil {
 			return err
 		}
-		return db.ApplyDelta(ctx, tx, mapping.SubaccountID, market.QuoteAsset, -(quoteDelta + fee), requestID)
+		return db.ApplyDelta(ctx, tx, mapping.AccountID, market.QuoteAsset, -(quoteDelta + fee), requestID)
 	case "SELL", "ASK":
-		if err := db.ApplyDelta(ctx, tx, mapping.SubaccountID, market.BaseAsset, -baseDelta, requestID); err != nil {
+		if err := db.ApplyDelta(ctx, tx, mapping.AccountID, market.BaseAsset, -baseDelta, requestID); err != nil {
 			return err
 		}
-		return db.ApplyDelta(ctx, tx, mapping.SubaccountID, market.QuoteAsset, quoteDelta-fee, requestID)
+		return db.ApplyDelta(ctx, tx, mapping.AccountID, market.QuoteAsset, quoteDelta-fee, requestID)
 	default:
 		return errors.New("invalid_side")
 	}

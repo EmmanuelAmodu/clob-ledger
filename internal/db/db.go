@@ -11,7 +11,7 @@ import (
 const schemaSQL = `
 CREATE TABLE IF NOT EXISTS orders (
 	request_id TEXT PRIMARY KEY,
-	subaccount_id BIGINT NOT NULL,
+	account_id BIGINT NOT NULL,
 	token_id BIGINT NOT NULL,
 	status TEXT NOT NULL,
 	reason TEXT NOT NULL DEFAULT '',
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS orders (
 
 CREATE TABLE IF NOT EXISTS ledger_transactions (
 	id BIGSERIAL PRIMARY KEY,
-	subaccount_id BIGINT NOT NULL,
+	account_id BIGINT NOT NULL,
 	asset TEXT NOT NULL,
 	delta BIGINT NOT NULL,
 	balance BIGINT NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS ledger_transactions (
 
 CREATE TABLE IF NOT EXISTS order_requests (
 	request_id TEXT PRIMARY KEY,
-	subaccount_id BIGINT NOT NULL,
+	account_id BIGINT NOT NULL,
 	token_id BIGINT NOT NULL,
 	side TEXT NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS order_requests (
 CREATE TABLE IF NOT EXISTS order_mappings (
 	order_id BIGINT PRIMARY KEY,
 	request_id TEXT NOT NULL,
-	subaccount_id BIGINT NOT NULL,
+	account_id BIGINT NOT NULL,
 	token_id BIGINT NOT NULL,
 	side TEXT NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -90,11 +90,11 @@ func GetOrderStatus(ctx context.Context, tx pgx.Tx, requestID string) (string, b
 	return status, true, nil
 }
 
-func InsertOrder(ctx context.Context, tx pgx.Tx, requestID string, subaccountID uint64, tokenID uint64, status, reason string) error {
+func InsertOrder(ctx context.Context, tx pgx.Tx, requestID string, accountID uint64, tokenID uint64, status, reason string) error {
 	_, err := tx.Exec(ctx, `
-INSERT INTO orders (request_id, subaccount_id, token_id, status, reason, created_at, updated_at)
+INSERT INTO orders (request_id, account_id, token_id, status, reason, created_at, updated_at)
 VALUES ($1,$2,$3,$4,$5,now(),now())
-`, requestID, subaccountID, tokenID, status, reason)
+`, requestID, accountID, tokenID, status, reason)
 	return err
 }
 
@@ -103,15 +103,15 @@ func UpdateOrder(ctx context.Context, tx pgx.Tx, requestID string, status, reaso
 	return err
 }
 
-func GetLatestBalance(ctx context.Context, tx pgx.Tx, subaccountID uint64, asset string) (int64, bool, error) {
+func GetLatestBalance(ctx context.Context, tx pgx.Tx, accountID uint64, asset string) (int64, bool, error) {
 	var balance int64
 	row := tx.QueryRow(ctx, `
 SELECT balance
 FROM ledger_transactions
-WHERE subaccount_id = $1 AND asset = $2
+WHERE account_id = $1 AND asset = $2
 ORDER BY id DESC
 LIMIT 1
-`, subaccountID, asset)
+`, accountID, asset)
 	if err := row.Scan(&balance); err != nil {
 		if err == pgx.ErrNoRows {
 			return 0, false, nil
@@ -121,38 +121,38 @@ LIMIT 1
 	return balance, true, nil
 }
 
-func InsertTransaction(ctx context.Context, tx pgx.Tx, subaccountID uint64, asset string, delta int64, balance int64, requestID string) error {
+func InsertTransaction(ctx context.Context, tx pgx.Tx, accountID uint64, asset string, delta int64, balance int64, requestID string) error {
 	_, err := tx.Exec(ctx, `
-INSERT INTO ledger_transactions (subaccount_id, asset, delta, balance, request_id, created_at)
+INSERT INTO ledger_transactions (account_id, asset, delta, balance, request_id, created_at)
 VALUES ($1,$2,$3,$4,$5,now())
-`, subaccountID, asset, delta, balance, requestID)
+`, accountID, asset, delta, balance, requestID)
 	return err
 }
 
 type OrderRequest struct {
-	RequestID    string
-	SubaccountID uint64
-	TokenID      uint64
-	Side         string
+	RequestID string
+	AccountID uint64
+	TokenID   uint64
+	Side      string
 }
 
 func InsertOrderRequest(ctx context.Context, tx pgx.Tx, req OrderRequest) error {
 	_, err := tx.Exec(ctx, `
-INSERT INTO order_requests (request_id, subaccount_id, token_id, side, created_at)
+INSERT INTO order_requests (request_id, account_id, token_id, side, created_at)
 VALUES ($1,$2,$3,$4,now())
 ON CONFLICT (request_id) DO NOTHING
-`, req.RequestID, req.SubaccountID, req.TokenID, req.Side)
+`, req.RequestID, req.AccountID, req.TokenID, req.Side)
 	return err
 }
 
 func GetOrderRequest(ctx context.Context, tx pgx.Tx, requestID string) (OrderRequest, bool, error) {
 	var req OrderRequest
 	row := tx.QueryRow(ctx, `
-SELECT request_id, subaccount_id, token_id, side
+SELECT request_id, account_id, token_id, side
 FROM order_requests
 WHERE request_id = $1
 `, requestID)
-	if err := row.Scan(&req.RequestID, &req.SubaccountID, &req.TokenID, &req.Side); err != nil {
+	if err := row.Scan(&req.RequestID, &req.AccountID, &req.TokenID, &req.Side); err != nil {
 		if err == pgx.ErrNoRows {
 			return OrderRequest{}, false, nil
 		}
@@ -162,30 +162,30 @@ WHERE request_id = $1
 }
 
 type OrderMapping struct {
-	OrderID      uint64
-	RequestID    string
-	SubaccountID uint64
-	TokenID      uint64
-	Side         string
+	OrderID   uint64
+	RequestID string
+	AccountID uint64
+	TokenID   uint64
+	Side      string
 }
 
 func InsertOrderMapping(ctx context.Context, tx pgx.Tx, mapping OrderMapping) error {
 	_, err := tx.Exec(ctx, `
-INSERT INTO order_mappings (order_id, request_id, subaccount_id, token_id, side, created_at)
+INSERT INTO order_mappings (order_id, request_id, account_id, token_id, side, created_at)
 VALUES ($1,$2,$3,$4,$5,now())
 ON CONFLICT (order_id) DO NOTHING
-`, mapping.OrderID, mapping.RequestID, mapping.SubaccountID, mapping.TokenID, mapping.Side)
+`, mapping.OrderID, mapping.RequestID, mapping.AccountID, mapping.TokenID, mapping.Side)
 	return err
 }
 
 func GetOrderMapping(ctx context.Context, tx pgx.Tx, orderID uint64) (OrderMapping, bool, error) {
 	var mapping OrderMapping
 	row := tx.QueryRow(ctx, `
-SELECT order_id, request_id, subaccount_id, token_id, side
+SELECT order_id, request_id, account_id, token_id, side
 FROM order_mappings
 WHERE order_id = $1
 `, orderID)
-	if err := row.Scan(&mapping.OrderID, &mapping.RequestID, &mapping.SubaccountID, &mapping.TokenID, &mapping.Side); err != nil {
+	if err := row.Scan(&mapping.OrderID, &mapping.RequestID, &mapping.AccountID, &mapping.TokenID, &mapping.Side); err != nil {
 		if err == pgx.ErrNoRows {
 			return OrderMapping{}, false, nil
 		}
@@ -206,8 +206,8 @@ ON CONFLICT DO NOTHING
 	return tag.RowsAffected() > 0, nil
 }
 
-func ApplyDelta(ctx context.Context, tx pgx.Tx, subaccountID uint64, asset string, delta int64, requestID string) error {
-	available, ok, err := GetLatestBalance(ctx, tx, subaccountID, asset)
+func ApplyDelta(ctx context.Context, tx pgx.Tx, accountID uint64, asset string, delta int64, requestID string) error {
+	available, ok, err := GetLatestBalance(ctx, tx, accountID, asset)
 	if err != nil {
 		return err
 	}
@@ -215,7 +215,7 @@ func ApplyDelta(ctx context.Context, tx pgx.Tx, subaccountID uint64, asset strin
 		available = 0
 	}
 	newBalance := available + delta
-	return InsertTransaction(ctx, tx, subaccountID, asset, delta, newBalance, requestID)
+	return InsertTransaction(ctx, tx, accountID, asset, delta, newBalance, requestID)
 }
 
 func InsertOutbox(ctx context.Context, tx pgx.Tx, subject string, payload []byte) error {

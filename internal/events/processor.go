@@ -111,10 +111,10 @@ func handleLedgerRequest(pool *pgxpool.Pool, req LedgerRequest, payload []byte, 
 	}
 
 	if err := db.InsertOrderRequest(ctx, tx, db.OrderRequest{
-		RequestID:    req.RequestID,
-		SubaccountID: req.SubaccountID,
-		TokenID:      req.TokenID,
-		Side:         req.Side,
+		RequestID: req.RequestID,
+		AccountID: req.AccountID,
+		TokenID:   req.TokenID,
+		Side:      req.Side,
 	}); err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func handleLedgerRequest(pool *pgxpool.Pool, req LedgerRequest, payload []byte, 
 	}
 
 	if status == "accepted" && required > 0 {
-		available, ok, err := db.GetLatestBalance(ctx, tx, req.SubaccountID, asset)
+		available, ok, err := db.GetLatestBalance(ctx, tx, req.AccountID, asset)
 		if err != nil {
 			return err
 		}
@@ -141,23 +141,23 @@ func handleLedgerRequest(pool *pgxpool.Pool, req LedgerRequest, payload []byte, 
 			reason = "insufficient_funds"
 		} else {
 			newBalance := available - int64(required)
-			if err := db.InsertTransaction(ctx, tx, req.SubaccountID, asset, -int64(required), newBalance, req.RequestID); err != nil {
+			if err := db.InsertTransaction(ctx, tx, req.AccountID, asset, -int64(required), newBalance, req.RequestID); err != nil {
 				return err
 			}
 		}
 	}
 
-	if err := db.InsertOrder(ctx, tx, req.RequestID, req.SubaccountID, req.TokenID, status, reason); err != nil {
+	if err := db.InsertOrder(ctx, tx, req.RequestID, req.AccountID, req.TokenID, status, reason); err != nil {
 		return err
 	}
 
 	ledgerEvent := LedgerEvent{
-		RequestID:    req.RequestID,
-		SubaccountID: req.SubaccountID,
-		TokenID:      req.TokenID,
-		Status:       status,
-		Reason:       reason,
-		Timestamp:    time.Now().UnixNano(),
+		RequestID: req.RequestID,
+		AccountID: req.AccountID,
+		TokenID:   req.TokenID,
+		Status:    status,
+		Reason:    reason,
+		Timestamp: time.Now().UnixNano(),
 	}
 	ledgerPayload, _ := json.Marshal(ledgerEvent)
 	if err := db.InsertOutbox(ctx, tx, ledgerEventsSubject, ledgerPayload); err != nil {
@@ -183,16 +183,16 @@ func ledgerRequestFromEvent(ev *enginepb.InputEvent) (LedgerRequest, error) {
 		return LedgerRequest{}, errUnsupportedEvent
 	}
 	return LedgerRequest{
-		RequestID:    order.GetRequestId(),
-		SubaccountID: order.GetSubaccountId(),
-		TokenID:      order.GetTokenId(),
-		Side:         order.GetSide(),
-		OrderType:    order.GetOrderType(),
-		TimeInForce:  order.GetTif(),
-		PriceTicks:   order.GetPriceTicks(),
-		Qty:          order.GetQty(),
-		ReduceOnly:   order.GetReduceOnly(),
-		Timestamp:    time.Now().UnixNano(),
+		RequestID:   order.GetRequestId(),
+		AccountID:   order.GetAccountId(),
+		TokenID:     order.GetTokenId(),
+		Side:        order.GetSide(),
+		OrderType:   order.GetOrderType(),
+		TimeInForce: order.GetTif(),
+		PriceTicks:  order.GetPriceTicks(),
+		Qty:         order.GetQty(),
+		ReduceOnly:  order.GetReduceOnly(),
+		Timestamp:   time.Now().UnixNano(),
 	}, nil
 }
 

@@ -6,7 +6,7 @@ option go_package = "github.com/EmmanuelAmodu/clob-ledger/internal/pb;pb";
 message NewOrder {
   string request_id = 1;
   uint64 token_id = 2;
-  uint64 subaccount_id = 3;
+  uint64 account_id = 3;
   string side = 4; // BUY/SELL
   string order_type = 5; // LIMIT/MARKET/IOC/FOK/POST_ONLY
   string tif = 6; // GTC/IOC/FOK
@@ -22,7 +22,7 @@ message NewOrder {
 message CancelOrder {
   string request_id = 1;
   uint64 token_id = 2;
-  uint64 subaccount_id = 3;
+  uint64 account_id = 3;
   uint64 order_id = 4;
   uint64 nonce_start = 5;
   uint64 nonce_end = 6;
@@ -32,7 +32,7 @@ message CancelOrder {
 message AmendOrder {
   string request_id = 1;
   uint64 token_id = 2;
-  uint64 subaccount_id = 3;
+  uint64 account_id = 3;
   uint64 order_id = 4;
   optional uint64 price_ticks = 5;
   optional uint64 qty = 6;

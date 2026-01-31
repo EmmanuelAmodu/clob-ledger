@@ -187,10 +187,10 @@ func insertOrderRequest(ctx context.Context, pool *pgxpool.Pool, requestID strin
 	}
 	defer func() { _ = tx.Rollback(context.Background()) }()
 	if err := db.InsertOrderRequest(ctx, tx, db.OrderRequest{
-		RequestID:    requestID,
-		SubaccountID: sub,
-		TokenID:      token,
-		Side:         side,
+		RequestID: requestID,
+		AccountID: sub,
+		TokenID:   token,
+		Side:      side,
 	}); err != nil {
 		return err
 	}
