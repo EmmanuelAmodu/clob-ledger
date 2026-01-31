@@ -1,0 +1,159 @@
+syntax = "proto3";
+package hypermarket.clob;
+
+option go_package = "github.com/EmmanuelAmodu/clob-ledger/internal/pb;pb";
+
+message NewOrder {
+  string request_id = 1;
+  uint64 token_id = 2;
+  uint64 subaccount_id = 3;
+  string side = 4; // BUY/SELL
+  string order_type = 5; // LIMIT/MARKET/IOC/FOK/POST_ONLY
+  string tif = 6; // GTC/IOC/FOK
+  uint64 price_ticks = 7;
+  uint64 qty = 8;
+  bool reduce_only = 9;
+  uint64 expiry_ts = 10;
+  uint64 nonce = 11;
+  bytes signature = 12;
+  uint64 client_ts = 13;
+}
+
+message CancelOrder {
+  string request_id = 1;
+  uint64 token_id = 2;
+  uint64 subaccount_id = 3;
+  uint64 order_id = 4;
+  uint64 nonce_start = 5;
+  uint64 nonce_end = 6;
+  uint64 qty = 7; // 0 = full cancel
+}
+
+message AmendOrder {
+  string request_id = 1;
+  uint64 token_id = 2;
+  uint64 subaccount_id = 3;
+  uint64 order_id = 4;
+  optional uint64 price_ticks = 5;
+  optional uint64 qty = 6;
+  uint64 nonce = 7;
+  uint64 client_ts = 8;
+}
+
+message PriceUpdate {
+  uint64 token_id = 1;
+  uint64 mark_price = 2;
+  uint64 index_price = 3;
+  uint64 ts = 4;
+}
+
+message FundingUpdate {
+  uint64 token_id = 1;
+  int64 funding_index = 2;
+  uint64 ts = 3;
+}
+
+enum MarketPhase {
+  MARKET_PHASE_UNSPECIFIED = 0;
+  MARKET_PHASE_OPEN = 1;
+  MARKET_PHASE_AUCTION = 2;
+  MARKET_PHASE_CLOSED = 3;
+}
+
+message SetMarketPhase {
+  uint64 token_id = 1;
+  MarketPhase phase = 2;
+}
+
+message RunAuction {
+  uint64 token_id = 1;
+  MarketPhase next_phase = 2;
+}
+
+message OrderAck {
+  string request_id = 1;
+  string status = 2; // ACCEPTED/REJECTED
+  string reject_reason = 3;
+  uint64 assigned_order_id = 4;
+  uint64 engine_seq = 5;
+  uint64 ts = 6;
+}
+
+message Fill {
+  uint64 token_id = 1;
+  uint64 maker_order_id = 2;
+  uint64 taker_order_id = 3;
+  uint64 price_ticks = 4;
+  uint64 qty = 5;
+  int64 maker_fee = 6;
+  int64 taker_fee = 7;
+  uint64 engine_seq = 8;
+  uint64 ts = 9;
+}
+
+enum DoneReason {
+  DONE_REASON_UNSPECIFIED = 0;
+  DONE_REASON_FILLED = 1;
+  DONE_REASON_CANCELED = 2;
+  DONE_REASON_REJECTED = 3;
+}
+
+message OrderDone {
+  uint64 order_id = 1;
+  DoneReason reason = 2;
+  uint64 engine_seq = 3;
+  uint64 ts = 4;
+}
+
+message OrderUpdate {
+  uint64 order_id = 1;
+  uint64 price_ticks = 2;
+  uint64 qty_remaining = 3;
+  uint64 engine_seq = 4;
+  uint64 ts = 5;
+}
+
+message BookLevel {
+  uint64 price_ticks = 1;
+  uint64 qty = 2;
+}
+
+message BookDelta {
+  uint64 token_id = 1;
+  repeated BookLevel bids_levels = 2;
+  repeated BookLevel asks_levels = 3;
+  uint64 engine_seq = 4;
+  uint64 ts = 5;
+}
+
+message SettlementBatch {
+  string batch_id = 1;
+  uint64 ts = 2;
+  repeated Fill fills = 3;
+  string price_refs = 4;
+  string funding_refs = 5;
+  bytes state_root = 6;
+}
+
+message InputEvent {
+  oneof payload {
+    NewOrder new_order = 1;
+    CancelOrder cancel_order = 2;
+    PriceUpdate price_update = 3;
+    FundingUpdate funding_update = 4;
+    AmendOrder amend_order = 5;
+    SetMarketPhase set_market_phase = 6;
+    RunAuction run_auction = 7;
+  }
+}
+
+message OutputEvent {
+  oneof payload {
+    OrderAck order_ack = 1;
+    Fill fill = 2;
+    BookDelta book_delta = 3;
+    SettlementBatch settlement_batch = 4;
+    OrderDone order_done = 5;
+    OrderUpdate order_update = 6;
+  }
+}
