@@ -4,6 +4,9 @@ package events
 
 import (
 	"context"
+	"fmt"
+	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,30 +15,22 @@ import (
 	enginepb "github.com/EmmanuelAmodu/clob-ledger/internal/pb"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	postgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 )
 
 func TestFillSettlementUpdatesBalances(t *testing.T) {
 	ctx := context.Background()
 
-	pgContainer, err := postgres.Run(
-		ctx,
-		"postgres:15-alpine",
-		postgres.WithDatabase("ledger"),
-		postgres.WithUsername("postgres"),
-		postgres.WithPassword("postgres"),
-	)
+	if err := exec.Command("docker", "info").Run(); err != nil {
+		t.Skipf("docker not available: %v", err)
+	}
+
+	containerID, dsn, err := startPostgres(ctx)
 	if err != nil {
 		t.Fatalf("postgres container: %v", err)
 	}
 	t.Cleanup(func() {
-		_ = pgContainer.Terminate(ctx)
+		_ = exec.Command("docker", "rm", "-f", containerID).Run()
 	})
-
-	dsn, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
-	if err != nil {
-		t.Fatalf("connection string: %v", err)
-	}
 
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
@@ -144,6 +139,45 @@ func seedBalances(ctx context.Context, pool *pgxpool.Pool, sub uint64, asset str
 		return err
 	}
 	return tx.Commit(ctx)
+}
+
+func startPostgres(ctx context.Context) (string, string, error) {
+	run := exec.Command("docker", "run", "-d",
+		"-e", "POSTGRES_USER=postgres",
+		"-e", "POSTGRES_PASSWORD=postgres",
+		"-e", "POSTGRES_DB=ledger",
+		"-p", "127.0.0.1::5432",
+		"postgres:15-alpine",
+	)
+	out, err := run.Output()
+	if err != nil {
+		return "", "", err
+	}
+	containerID := strings.TrimSpace(string(out))
+
+	portOut, err := exec.Command("docker", "port", containerID, "5432/tcp").Output()
+	if err != nil {
+		return "", "", err
+	}
+	line := strings.TrimSpace(string(portOut))
+	parts := strings.Split(line, ":")
+	if len(parts) < 2 {
+		return "", "", fmt.Errorf("unexpected docker port output: %s", line)
+	}
+	port := parts[len(parts)-1]
+	dsn := fmt.Sprintf("postgres://postgres:postgres@127.0.0.1:%s/ledger?sslmode=disable", port)
+
+	deadline := time.Now().Add(20 * time.Second)
+	for time.Now().Before(deadline) {
+		pool, err := pgxpool.New(ctx, dsn)
+		if err == nil {
+			_ = pool.Ping(ctx)
+			pool.Close()
+			return containerID, dsn, nil
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	return containerID, dsn, fmt.Errorf("postgres not ready")
 }
 
 func insertOrderRequest(ctx context.Context, pool *pgxpool.Pool, requestID string, sub uint64, token uint64, side string) error {
