@@ -3,7 +3,7 @@ package events
 type LedgerRequest struct {
 	RequestID   string `json:"request_id"`
 	AccountID   uint64 `json:"account_id"`
-	TokenID     uint64 `json:"token_id"`
+	TokenID     string `json:"token_id"`
 	Side        string `json:"side"`
 	OrderType   string `json:"order_type"`
 	TimeInForce string `json:"time_in_force"`
@@ -16,7 +16,7 @@ type LedgerRequest struct {
 type LedgerEvent struct {
 	RequestID string `json:"request_id"`
 	AccountID uint64 `json:"account_id"`
-	TokenID   uint64 `json:"token_id"`
+	TokenID   string `json:"token_id"`
 	Status    string `json:"status"`
 	Reason    string `json:"reason"`
 	Timestamp int64  `json:"timestamp"`

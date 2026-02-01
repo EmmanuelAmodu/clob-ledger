@@ -42,8 +42,9 @@ func TestFillSettlementUpdatesBalances(t *testing.T) {
 		t.Fatalf("migrate: %v", err)
 	}
 
-	markets := map[uint64]config.Market{
-		1: {TokenID: 1, BaseAsset: "ABC", QuoteAsset: "USD"},
+	tokenID := "0x0000000000000000000000000000000000000000000000000000000000000001"
+	markets := map[string]config.Market{
+		tokenID: {TokenID: tokenID, BaseAsset: "ABC", QuoteAsset: "USD"},
 	}
 
 	makerSub := uint64(10)
@@ -62,10 +63,10 @@ func TestFillSettlementUpdatesBalances(t *testing.T) {
 		t.Fatalf("seed taker quote: %v", err)
 	}
 
-	if err := insertOrderRequest(ctx, pool, "m-1", makerSub, 1, "SELL"); err != nil {
+	if err := insertOrderRequest(ctx, pool, "m-1", makerSub, tokenID, "SELL"); err != nil {
 		t.Fatalf("insert maker request: %v", err)
 	}
-	if err := insertOrderRequest(ctx, pool, "t-1", takerSub, 1, "BUY"); err != nil {
+	if err := insertOrderRequest(ctx, pool, "t-1", takerSub, tokenID, "BUY"); err != nil {
 		t.Fatalf("insert taker request: %v", err)
 	}
 
@@ -93,7 +94,7 @@ func TestFillSettlementUpdatesBalances(t *testing.T) {
 	}
 
 	fill := &enginepb.Fill{
-		TokenId:      1,
+		TokenId:      tokenID,
 		MakerOrderId: 1001,
 		TakerOrderId: 1002,
 		PriceTicks:   50,
@@ -180,7 +181,7 @@ func startPostgres(ctx context.Context) (string, string, error) {
 	return containerID, dsn, fmt.Errorf("postgres not ready")
 }
 
-func insertOrderRequest(ctx context.Context, pool *pgxpool.Pool, requestID string, sub uint64, token uint64, side string) error {
+func insertOrderRequest(ctx context.Context, pool *pgxpool.Pool, requestID string, sub uint64, token string, side string) error {
 	tx, err := pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return err

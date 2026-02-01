@@ -19,7 +19,7 @@ import (
 
 var errUnknownOrderMapping = errors.New("unknown_order_mapping")
 
-func StartOutputConsumer(ctx context.Context, js nats.JetStreamContext, subject, durable string, pool *pgxpool.Pool, markets map[uint64]config.Market) error {
+func StartOutputConsumer(ctx context.Context, js nats.JetStreamContext, subject, durable string, pool *pgxpool.Pool, markets map[string]config.Market) error {
 	sub, err := js.PullSubscribe(subject, durable, nats.ManualAck())
 	if err != nil {
 		return err
@@ -54,7 +54,7 @@ func StartOutputConsumer(ctx context.Context, js nats.JetStreamContext, subject,
 	return nil
 }
 
-func handleOutputEvent(pool *pgxpool.Pool, ev *enginepb.OutputEvent, markets map[uint64]config.Market) error {
+func handleOutputEvent(pool *pgxpool.Pool, ev *enginepb.OutputEvent, markets map[string]config.Market) error {
 	if ack := ev.GetOrderAck(); ack != nil {
 		return handleOrderAck(pool, ack)
 	}
@@ -100,7 +100,7 @@ func handleOrderAck(pool *pgxpool.Pool, ack *enginepb.OrderAck) error {
 	return tx.Commit(ctx)
 }
 
-func handleFill(pool *pgxpool.Pool, fill *enginepb.Fill, markets map[uint64]config.Market) error {
+func handleFill(pool *pgxpool.Pool, fill *enginepb.Fill, markets map[string]config.Market) error {
 	market, ok := markets[fill.GetTokenId()]
 	if !ok {
 		return errInvalidMarket

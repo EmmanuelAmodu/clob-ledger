@@ -5,7 +5,7 @@ option go_package = "github.com/EmmanuelAmodu/clob-ledger/internal/pb;pb";
 
 message NewOrder {
   string request_id = 1;
-  uint64 token_id = 2;
+  string token_id = 2;
   uint64 account_id = 3;
   string side = 4; // BUY/SELL
   string order_type = 5; // LIMIT/MARKET/IOC/FOK/POST_ONLY
@@ -21,7 +21,7 @@ message NewOrder {
 
 message CancelOrder {
   string request_id = 1;
-  uint64 token_id = 2;
+  string token_id = 2;
   uint64 account_id = 3;
   uint64 order_id = 4;
   uint64 nonce_start = 5;
@@ -31,7 +31,7 @@ message CancelOrder {
 
 message AmendOrder {
   string request_id = 1;
-  uint64 token_id = 2;
+  string token_id = 2;
   uint64 account_id = 3;
   uint64 order_id = 4;
   optional uint64 price_ticks = 5;
@@ -41,14 +41,14 @@ message AmendOrder {
 }
 
 message PriceUpdate {
-  uint64 token_id = 1;
+  string token_id = 1;
   uint64 mark_price = 2;
   uint64 index_price = 3;
   uint64 ts = 4;
 }
 
 message FundingUpdate {
-  uint64 token_id = 1;
+  string token_id = 1;
   int64 funding_index = 2;
   uint64 ts = 3;
 }
@@ -61,12 +61,12 @@ enum MarketPhase {
 }
 
 message SetMarketPhase {
-  uint64 token_id = 1;
+  string token_id = 1;
   MarketPhase phase = 2;
 }
 
 message RunAuction {
-  uint64 token_id = 1;
+  string token_id = 1;
   MarketPhase next_phase = 2;
 }
 
@@ -80,7 +80,7 @@ message OrderAck {
 }
 
 message Fill {
-  uint64 token_id = 1;
+  string token_id = 1;
   uint64 maker_order_id = 2;
   uint64 taker_order_id = 3;
   uint64 price_ticks = 4;
@@ -119,7 +119,7 @@ message BookLevel {
 }
 
 message BookDelta {
-  uint64 token_id = 1;
+  string token_id = 1;
   repeated BookLevel bids_levels = 2;
   repeated BookLevel asks_levels = 3;
   uint64 engine_seq = 4;

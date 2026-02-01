@@ -1,14 +1,14 @@
 package config
 
 import (
+	"encoding/hex"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 )
 
 type Market struct {
-	TokenID    uint64
+	TokenID    string
 	BaseAsset  string
 	QuoteAsset string
 }
@@ -23,7 +23,7 @@ type Config struct {
 	DatabaseURL           string
 	LedgerConsumerName    string
 	LedgerOutputsConsumer string
-	Markets               map[uint64]Market
+	Markets               map[string]Market
 }
 
 func FromEnv() (Config, error) {
@@ -45,8 +45,8 @@ func FromEnv() (Config, error) {
 	}, nil
 }
 
-func parseMarkets(value string) (map[uint64]Market, error) {
-	markets := make(map[uint64]Market)
+func parseMarkets(value string) (map[string]Market, error) {
+	markets := make(map[string]Market)
 	value = strings.TrimSpace(value)
 	if value == "" {
 		return markets, nil
@@ -61,8 +61,8 @@ func parseMarkets(value string) (map[uint64]Market, error) {
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("invalid market entry: %q", entry)
 		}
-		tokenID, err := strconv.ParseUint(strings.TrimSpace(parts[0]), 10, 64)
-		if err != nil {
+		tokenID := strings.TrimSpace(parts[0])
+		if !validTokenID(tokenID) {
 			return nil, fmt.Errorf("invalid token id in market entry %q", entry)
 		}
 		base, quote, ok := splitAssets(strings.TrimSpace(parts[1]))
@@ -98,6 +98,21 @@ func splitAssets(value string) (string, string, bool) {
 		return "", "", false
 	}
 	return base, quote, true
+}
+
+func validTokenID(tokenID string) bool {
+	tokenID = strings.TrimSpace(tokenID)
+	if tokenID == "" {
+		return false
+	}
+	if strings.HasPrefix(tokenID, "0x") || strings.HasPrefix(tokenID, "0X") {
+		tokenID = tokenID[2:]
+	}
+	if len(tokenID) != 64 {
+		return false
+	}
+	_, err := hex.DecodeString(tokenID)
+	return err == nil
 }
 
 func envOr(key, fallback string) string {

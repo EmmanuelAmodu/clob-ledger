@@ -22,7 +22,7 @@ var errInvalidMarket = errors.New("invalid_token_id")
 var errInvalidPriceValue = errors.New("invalid_price")
 var errUnsupportedEvent = errors.New("unsupported_input_event")
 
-func StartLedgerRequestConsumer(ctx context.Context, js nats.JetStreamContext, subject, durable string, pool *pgxpool.Pool, ledgerEventsSubject, engineInputSubject string, markets map[uint64]config.Market) error {
+func StartLedgerRequestConsumer(ctx context.Context, js nats.JetStreamContext, subject, durable string, pool *pgxpool.Pool, ledgerEventsSubject, engineInputSubject string, markets map[string]config.Market) error {
 	sub, err := js.PullSubscribe(subject, durable, nats.ManualAck())
 	if err != nil {
 		return err
@@ -90,7 +90,7 @@ func StartOutboxPublisher(ctx context.Context, js nats.JetStreamContext, pool *p
 	}()
 }
 
-func handleLedgerRequest(pool *pgxpool.Pool, req LedgerRequest, payload []byte, ledgerEventsSubject, engineInputSubject string, markets map[uint64]config.Market) error {
+func handleLedgerRequest(pool *pgxpool.Pool, req LedgerRequest, payload []byte, ledgerEventsSubject, engineInputSubject string, markets map[string]config.Market) error {
 	ctx, cancel := db.WithTimeout(context.Background())
 	defer cancel()
 
@@ -196,7 +196,7 @@ func ledgerRequestFromEvent(ev *enginepb.InputEvent) (LedgerRequest, error) {
 	}, nil
 }
 
-func requiredDebit(req LedgerRequest, markets map[uint64]config.Market) (string, uint64, error) {
+func requiredDebit(req LedgerRequest, markets map[string]config.Market) (string, uint64, error) {
 	market, ok := markets[req.TokenID]
 	if !ok {
 		return "", 0, errInvalidMarket

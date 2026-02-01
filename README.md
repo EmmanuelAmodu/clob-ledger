@@ -17,7 +17,7 @@ Ledger service responsible for validating funds and publishing order commands to
 - `ENGINE_INPUT_SUBJECT` (default: `clob.inputs`)
 - `LEDGER_CONSUMER` (default: `ledger-requests`)
 - `DATABASE_URL` (default: `postgres://postgres:postgres@127.0.0.1:5432/clob_ledger?sslmode=disable`)
-- `LEDGER_MARKETS` (optional; format: `token_id=BASE/QUOTE,token_id=BASE/QUOTE`)
+- `LEDGER_MARKETS` (optional; format: `0x<64-hex>=BASE/QUOTE,0x<64-hex>=BASE/QUOTE`)
 
 ## Notes
 - Balances are stored as an append-only `ledger_transactions` table (per asset).

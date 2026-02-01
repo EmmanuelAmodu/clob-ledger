@@ -12,7 +12,7 @@ const schemaSQL = `
 CREATE TABLE IF NOT EXISTS orders (
 	request_id TEXT PRIMARY KEY,
 	account_id BIGINT NOT NULL,
-	token_id BIGINT NOT NULL,
+	token_id TEXT NOT NULL,
 	status TEXT NOT NULL,
 	reason TEXT NOT NULL DEFAULT '',
 	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS ledger_transactions (
 CREATE TABLE IF NOT EXISTS order_requests (
 	request_id TEXT PRIMARY KEY,
 	account_id BIGINT NOT NULL,
-	token_id BIGINT NOT NULL,
+	token_id TEXT NOT NULL,
 	side TEXT NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -41,14 +41,14 @@ CREATE TABLE IF NOT EXISTS order_mappings (
 	order_id BIGINT PRIMARY KEY,
 	request_id TEXT NOT NULL,
 	account_id BIGINT NOT NULL,
-	token_id BIGINT NOT NULL,
+	token_id TEXT NOT NULL,
 	side TEXT NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS settled_fills (
 	engine_seq BIGINT NOT NULL,
-	token_id BIGINT NOT NULL,
+	token_id TEXT NOT NULL,
 	maker_order_id BIGINT NOT NULL,
 	taker_order_id BIGINT NOT NULL,
 	price_ticks BIGINT NOT NULL,
@@ -90,7 +90,7 @@ func GetOrderStatus(ctx context.Context, tx pgx.Tx, requestID string) (string, b
 	return status, true, nil
 }
 
-func InsertOrder(ctx context.Context, tx pgx.Tx, requestID string, accountID uint64, tokenID uint64, status, reason string) error {
+func InsertOrder(ctx context.Context, tx pgx.Tx, requestID string, accountID uint64, tokenID string, status, reason string) error {
 	_, err := tx.Exec(ctx, `
 INSERT INTO orders (request_id, account_id, token_id, status, reason, created_at, updated_at)
 VALUES ($1,$2,$3,$4,$5,now(),now())
@@ -132,7 +132,7 @@ VALUES ($1,$2,$3,$4,$5,now())
 type OrderRequest struct {
 	RequestID string
 	AccountID uint64
-	TokenID   uint64
+	TokenID   string
 	Side      string
 }
 
@@ -165,7 +165,7 @@ type OrderMapping struct {
 	OrderID   uint64
 	RequestID string
 	AccountID uint64
-	TokenID   uint64
+	TokenID   string
 	Side      string
 }
 
@@ -194,7 +194,7 @@ WHERE order_id = $1
 	return mapping, true, nil
 }
 
-func InsertSettledFill(ctx context.Context, tx pgx.Tx, engineSeq, tokenID, makerOrderID, takerOrderID, priceTicks, qty uint64) (bool, error) {
+func InsertSettledFill(ctx context.Context, tx pgx.Tx, engineSeq uint64, tokenID string, makerOrderID, takerOrderID, priceTicks, qty uint64) (bool, error) {
 	tag, err := tx.Exec(ctx, `
 INSERT INTO settled_fills (engine_seq, token_id, maker_order_id, taker_order_id, price_ticks, qty)
 VALUES ($1,$2,$3,$4,$5,$6)
