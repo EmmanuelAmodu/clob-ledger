@@ -206,6 +206,25 @@ ON CONFLICT DO NOTHING
 	return tag.RowsAffected() > 0, nil
 }
 
+func HasSettledFill(ctx context.Context, pool *pgxpool.Pool, engineSeq uint64, tokenID string, makerOrderID, takerOrderID, priceTicks, qty uint64) (bool, error) {
+	var exists bool
+	row := pool.QueryRow(ctx, `
+SELECT EXISTS(
+  SELECT 1
+  FROM settled_fills
+  WHERE engine_seq = $1
+    AND token_id = $2
+    AND maker_order_id = $3
+    AND taker_order_id = $4
+    AND price_ticks = $5
+    AND qty = $6
+)`, engineSeq, tokenID, makerOrderID, takerOrderID, priceTicks, qty)
+	if err := row.Scan(&exists); err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
 func ApplyDelta(ctx context.Context, tx pgx.Tx, accountID uint64, asset string, delta int64, requestID string) error {
 	available, ok, err := GetLatestBalance(ctx, tx, accountID, asset)
 	if err != nil {

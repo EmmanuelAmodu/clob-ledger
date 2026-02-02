@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -23,6 +24,10 @@ type Config struct {
 	DatabaseURL           string
 	LedgerConsumerName    string
 	LedgerOutputsConsumer string
+	ReconcilerConsumer    string
+	ReconcilerAlertsTopic string
+	ReconcilerGraceMs     int
+	ReconcilerAckMissing  bool
 	Markets               map[string]Market
 }
 
@@ -41,6 +46,10 @@ func FromEnv() (Config, error) {
 		DatabaseURL:           envOr("DATABASE_URL", "postgres://postgres:postgres@127.0.0.1:5432/clob_ledger?sslmode=disable"),
 		LedgerConsumerName:    envOr("LEDGER_CONSUMER", "ledger-requests"),
 		LedgerOutputsConsumer: envOr("LEDGER_OUTPUTS_CONSUMER", "ledger-outputs"),
+		ReconcilerConsumer:    envOr("RECONCILER_CONSUMER", "ledger-reconciler"),
+		ReconcilerAlertsTopic: envOr("RECONCILER_ALERTS_SUBJECT", "ledger.reconcile.alerts"),
+		ReconcilerGraceMs:     envOrInt("RECONCILER_GRACE_MS", 2000),
+		ReconcilerAckMissing:  envOrBool("RECONCILER_ACK_ON_MISSING", true),
 		Markets:               markets,
 	}, nil
 }
@@ -118,6 +127,27 @@ func validTokenID(tokenID string) bool {
 func envOr(key, fallback string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
+	}
+	return fallback
+}
+
+func envOrInt(key string, fallback int) int {
+	if value := os.Getenv(key); value != "" {
+		if parsed, err := strconv.Atoi(value); err == nil {
+			return parsed
+		}
+	}
+	return fallback
+}
+
+func envOrBool(key string, fallback bool) bool {
+	if value := os.Getenv(key); value != "" {
+		switch strings.ToLower(strings.TrimSpace(value)) {
+		case "1", "true", "yes", "y", "on":
+			return true
+		case "0", "false", "no", "n", "off":
+			return false
+		}
 	}
 	return fallback
 }

@@ -8,6 +8,7 @@ Ledger service responsible for validating funds and publishing order commands to
 - Publishes `ledger.events` (JSON)
 - Publishes `clob.inputs` (protobuf `InputEvent`)
 - Uses an outbox table for reliable publishing
+- Optional reconciler validates that engine fills are finalized in Postgres
 
 ## Env vars
 - `NATS_URL` (default: `nats://127.0.0.1:4222`)
@@ -15,9 +16,15 @@ Ledger service responsible for validating funds and publishing order commands to
 - `LEDGER_REQUESTS_SUBJECT` (default: `ledger.requests`)
 - `LEDGER_EVENTS_SUBJECT` (default: `ledger.events`)
 - `ENGINE_INPUT_SUBJECT` (default: `clob.inputs`)
+- `ENGINE_OUTPUT_SUBJECT` (default: `clob.outputs`)
 - `LEDGER_CONSUMER` (default: `ledger-requests`)
+- `LEDGER_OUTPUTS_CONSUMER` (default: `ledger-outputs`)
 - `DATABASE_URL` (default: `postgres://postgres:postgres@127.0.0.1:5432/clob_ledger?sslmode=disable`)
 - `LEDGER_MARKETS` (optional; format: `0x<64-hex>=BASE/QUOTE,0x<64-hex>=BASE/QUOTE`)
+- `RECONCILER_CONSUMER` (default: `ledger-reconciler`)
+- `RECONCILER_ALERTS_SUBJECT` (default: `ledger.reconcile.alerts`)
+- `RECONCILER_GRACE_MS` (default: `2000`)
+- `RECONCILER_ACK_ON_MISSING` (default: `true`)
 
 ## Notes
 - Balances are stored as an append-only `ledger_transactions` table (per asset).
