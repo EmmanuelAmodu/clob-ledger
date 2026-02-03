@@ -27,7 +27,7 @@ Ledger service responsible for validating funds and publishing order commands to
 - `RECONCILER_ACK_ON_MISSING` (default: `true`)
 
 ## Notes
-- Balances are stored as an append-only `ledger_transactions` table (per asset).
+- Balances are stored as an append-only `ledger_transactions` table (per asset). Quote asset balances are in 0.1 cent units.
 - The ledger debits quote asset for bids and base asset for asks.
-- Orders must provide a price in cents (1-99), matching the USD base pair.
+- Orders must provide a price in 0.1 cent ticks (1-1000), matching the USD base pair.
 - If `LEDGER_MARKETS` is unset, all requests are rejected as `invalid_token_id`.

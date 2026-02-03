@@ -202,7 +202,7 @@ func requiredDebit(req LedgerRequest, markets map[string]config.Market) (string,
 		return "", 0, errInvalidMarket
 	}
 
-	if req.PriceTicks == 0 || req.PriceTicks >= 100 {
+	if req.PriceTicks == 0 || req.PriceTicks >= 1001 {
 		return "", 0, errInvalidPriceValue
 	}
 

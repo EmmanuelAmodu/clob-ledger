@@ -115,7 +115,7 @@ func TestFillSettlementUpdatesBalances(t *testing.T) {
 	takerBase := mustBalance(t, pool, takerSub, "ABC")
 	takerQuote := mustBalance(t, pool, takerSub, "USD")
 
-	// notional = 50 * 2 = 100
+	// notional = 50 * 2 = 100 (0.1 cent ticks)
 	if makerBase != 98 {
 		t.Fatalf("maker base expected 98, got %d", makerBase)
 	}
