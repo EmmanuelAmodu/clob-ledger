@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Market struct {
@@ -28,6 +29,11 @@ type Config struct {
 	ReconcilerAlertsTopic string
 	ReconcilerGraceMs     int
 	ReconcilerAckMissing  bool
+	HTTPListenAddr        string
+	HTTPReadTimeout       time.Duration
+	HTTPWriteTimeout      time.Duration
+	HTTPShutdownTimeout   time.Duration
+	HTTPAuthToken         string
 	Markets               map[string]Market
 }
 
@@ -50,6 +56,11 @@ func FromEnv() (Config, error) {
 		ReconcilerAlertsTopic: envOr("RECONCILER_ALERTS_SUBJECT", "ledger.reconcile.alerts"),
 		ReconcilerGraceMs:     envOrInt("RECONCILER_GRACE_MS", 2000),
 		ReconcilerAckMissing:  envOrBool("RECONCILER_ACK_ON_MISSING", true),
+		HTTPListenAddr:        envOr("LEDGER_HTTP_ADDR", "127.0.0.1:8082"),
+		HTTPReadTimeout:       envOrDuration("LEDGER_HTTP_READ_TIMEOUT", 5*time.Second),
+		HTTPWriteTimeout:      envOrDuration("LEDGER_HTTP_WRITE_TIMEOUT", 10*time.Second),
+		HTTPShutdownTimeout:   envOrDuration("LEDGER_HTTP_SHUTDOWN_TIMEOUT", 10*time.Second),
+		HTTPAuthToken:         envOr("LEDGER_HTTP_TOKEN", ""),
 		Markets:               markets,
 	}, nil
 }
@@ -147,6 +158,15 @@ func envOrBool(key string, fallback bool) bool {
 			return true
 		case "0", "false", "no", "n", "off":
 			return false
+		}
+	}
+	return fallback
+}
+
+func envOrDuration(key string, fallback time.Duration) time.Duration {
+	if value := os.Getenv(key); value != "" {
+		if parsed, err := time.ParseDuration(strings.TrimSpace(value)); err == nil {
+			return parsed
 		}
 	}
 	return fallback

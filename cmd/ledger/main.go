@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,6 +14,7 @@ import (
 	"github.com/EmmanuelAmodu/clob-ledger/internal/config"
 	"github.com/EmmanuelAmodu/clob-ledger/internal/db"
 	"github.com/EmmanuelAmodu/clob-ledger/internal/events"
+	"github.com/EmmanuelAmodu/clob-ledger/internal/httpapi"
 )
 
 func main() {
@@ -56,6 +58,23 @@ func main() {
 	}
 
 	events.StartOutboxPublisher(ctx, js, pool)
+
+	if cfg.HTTPListenAddr != "" {
+		httpServer := &httpapi.Server{
+			Log:             slog.Default(),
+			DB:              pool,
+			AuthToken:       cfg.HTTPAuthToken,
+			ListenAddr:      cfg.HTTPListenAddr,
+			ReadTimeout:     cfg.HTTPReadTimeout,
+			WriteTimeout:    cfg.HTTPWriteTimeout,
+			ShutdownTimeout: cfg.HTTPShutdownTimeout,
+		}
+		go func() {
+			if err := httpServer.Run(ctx); err != nil {
+				log.Printf("ledger http error: %v", err)
+			}
+		}()
+	}
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)

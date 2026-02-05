@@ -61,6 +61,9 @@ func handleOutputEvent(pool *pgxpool.Pool, ev *enginepb.OutputEvent, markets map
 	if fill := ev.GetFill(); fill != nil {
 		return handleFill(pool, fill, markets)
 	}
+	if done := ev.GetOrderDone(); done != nil {
+		return handleOrderDone(pool, done)
+	}
 	return nil
 }
 
@@ -167,6 +170,51 @@ func handleFill(pool *pgxpool.Pool, fill *enginepb.Fill, markets map[string]conf
 	}
 
 	return tx.Commit(ctx)
+}
+
+func handleOrderDone(pool *pgxpool.Pool, done *enginepb.OrderDone) error {
+	if done.GetOrderId() == 0 {
+		return nil
+	}
+
+	ctx, cancel := db.WithTimeout(context.Background())
+	defer cancel()
+
+	tx, err := pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(context.Background()) }()
+
+	mapping, ok, err := db.GetOrderMapping(ctx, tx, done.GetOrderId())
+	if err != nil {
+		return err
+	}
+	if !ok {
+		if done.GetReason() == enginepb.DoneReason_DONE_REASON_REJECTED {
+			return nil
+		}
+		return errUnknownOrderMapping
+	}
+
+	status, reason := statusFromDoneReason(done.GetReason())
+	if err := db.UpdateOrder(ctx, tx, mapping.RequestID, status, reason); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+func statusFromDoneReason(reason enginepb.DoneReason) (string, string) {
+	switch reason {
+	case enginepb.DoneReason_DONE_REASON_FILLED:
+		return "filled", "filled"
+	case enginepb.DoneReason_DONE_REASON_CANCELED:
+		return "canceled", "canceled"
+	case enginepb.DoneReason_DONE_REASON_REJECTED:
+		return "rejected", "rejected"
+	default:
+		return "done", "unspecified"
+	}
 }
 
 func applyFillDeltas(ctx context.Context, tx pgx.Tx, mapping db.OrderMapping, market config.Market, notional uint64, qty uint64, fee int64, requestID string) error {
