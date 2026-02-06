@@ -51,6 +51,7 @@ func (s *Server) Run(ctx context.Context) error {
 	mux.HandleFunc("/v1/health", func(w http.ResponseWriter, _ *http.Request) {
 		WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "time": time.Now().Unix()})
 	})
+	mux.HandleFunc("/v1/market_fills", s.handleMarketFills)
 	mux.HandleFunc("/v1/balance", s.handleBalance)
 	mux.HandleFunc("/v1/balances", s.handleBalances)
 	mux.HandleFunc("/v1/orders", s.handleOrders)
@@ -339,6 +340,64 @@ LIMIT $3
 	WriteJSON(w, http.StatusOK, map[string]any{
 		"account_id": accountID,
 		"fills":      fills,
+	})
+}
+
+func (s *Server) handleMarketFills(w http.ResponseWriter, r *http.Request) {
+	tokenID := strings.TrimSpace(r.URL.Query().Get("token_id"))
+	if tokenID == "" || !validTokenID(tokenID) {
+		WriteError(w, http.StatusBadRequest, "BAD_REQUEST", "token_id required")
+		return
+	}
+	limit := parseLimit(r, 500, 5000)
+
+	ctx, cancel := db.WithTimeout(r.Context())
+	defer cancel()
+
+	rows, err := s.DB.Query(ctx, `
+SELECT f.engine_seq,
+       f.token_id,
+       f.price_ticks,
+       f.qty,
+       f.created_at
+FROM settled_fills f
+WHERE f.token_id = $1
+ORDER BY f.engine_seq DESC
+LIMIT $2
+`, tokenID, limit)
+	if err != nil {
+		WriteError(w, http.StatusServiceUnavailable, "DB_ERROR", "query failed")
+		return
+	}
+	defer rows.Close()
+
+	type fillRow struct {
+		EngineSeq  uint64    `json:"engine_seq"`
+		TokenID    string    `json:"token_id"`
+		PriceTicks uint64    `json:"price_ticks"`
+		Qty        uint64    `json:"qty"`
+		CreatedAt  time.Time `json:"created_at"`
+		Ts         int64     `json:"ts"`
+	}
+
+	fills := make([]fillRow, 0)
+	for rows.Next() {
+		var row fillRow
+		if scanErr := rows.Scan(&row.EngineSeq, &row.TokenID, &row.PriceTicks, &row.Qty, &row.CreatedAt); scanErr != nil {
+			WriteError(w, http.StatusServiceUnavailable, "DB_ERROR", "query failed")
+			return
+		}
+		row.Ts = row.CreatedAt.Unix()
+		fills = append(fills, row)
+	}
+	if rows.Err() != nil {
+		WriteError(w, http.StatusServiceUnavailable, "DB_ERROR", "query failed")
+		return
+	}
+
+	WriteJSON(w, http.StatusOK, map[string]any{
+		"token_id": tokenID,
+		"fills":    fills,
 	})
 }
 

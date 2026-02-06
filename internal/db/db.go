@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS settled_fills (
 	taker_order_id BIGINT NOT NULL,
 	price_ticks BIGINT NOT NULL,
 	qty BIGINT NOT NULL,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 	PRIMARY KEY (engine_seq, token_id, maker_order_id, taker_order_id, price_ticks, qty)
 );
 
@@ -63,6 +64,9 @@ CREATE TABLE IF NOT EXISTS outbox (
 	published BOOLEAN NOT NULL DEFAULT false,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE settled_fills
+ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now();
 `
 
 func NewPool(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
@@ -194,12 +198,12 @@ WHERE order_id = $1
 	return mapping, true, nil
 }
 
-func InsertSettledFill(ctx context.Context, tx pgx.Tx, engineSeq uint64, tokenID string, makerOrderID, takerOrderID, priceTicks, qty uint64) (bool, error) {
+func InsertSettledFill(ctx context.Context, tx pgx.Tx, engineSeq uint64, tokenID string, makerOrderID, takerOrderID, priceTicks, qty uint64, createdAt time.Time) (bool, error) {
 	tag, err := tx.Exec(ctx, `
-INSERT INTO settled_fills (engine_seq, token_id, maker_order_id, taker_order_id, price_ticks, qty)
-VALUES ($1,$2,$3,$4,$5,$6)
+INSERT INTO settled_fills (engine_seq, token_id, maker_order_id, taker_order_id, price_ticks, qty, created_at)
+VALUES ($1,$2,$3,$4,$5,$6,$7)
 ON CONFLICT DO NOTHING
-`, engineSeq, tokenID, makerOrderID, takerOrderID, priceTicks, qty)
+`, engineSeq, tokenID, makerOrderID, takerOrderID, priceTicks, qty, createdAt)
 	if err != nil {
 		return false, err
 	}

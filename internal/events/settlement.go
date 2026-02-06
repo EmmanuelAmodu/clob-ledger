@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -148,6 +149,7 @@ func handleFill(pool *pgxpool.Pool, fill *enginepb.Fill, markets map[string]conf
 		fill.GetTakerOrderId(),
 		fill.GetPriceTicks(),
 		fill.GetQty(),
+		time.Unix(int64(fill.GetTs()), 0),
 	)
 	if err != nil {
 		return err
